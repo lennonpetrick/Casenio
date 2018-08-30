@@ -11,4 +11,9 @@ public class MainPresenter implements MainContract.Presenter {
             mView.turnWifiOn();
         }
     }
+
+    @Override
+    public void connect(String ssid, String password) {
+
+    }
 }

@@ -9,5 +9,7 @@ public interface MainContract {
 
     interface Presenter {
 
+        void connect(String ssid, String password);
+
     }
 }
