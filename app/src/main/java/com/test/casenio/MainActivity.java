@@ -4,8 +4,10 @@ import android.content.Context;
 import android.net.wifi.WifiConfiguration;
 import android.net.wifi.WifiManager;
 import android.os.Bundle;
+import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
+import android.view.Window;
 import android.view.inputmethod.EditorInfo;
 import android.widget.EditText;
 
@@ -45,6 +47,8 @@ public class MainActivity extends AppCompatActivity implements MainContract.View
     protected void onDestroy() {
         mListenersDisposable.clear();
         mListenersDisposable = null;
+        mPresenter.disconnect();
+        mPresenter = null;
         super.onDestroy();
     }
 
@@ -56,6 +60,17 @@ public class MainActivity extends AppCompatActivity implements MainContract.View
     @Override
     public void turnWifiOn() {
         mWifiManager.setWifiEnabled(true);
+    }
+
+    @Override
+    public void showMessage(String message) {
+        Window window = getWindow();
+        View view = window.getCurrentFocus();
+        if (view == null) {
+            view = window.getDecorView();
+        }
+
+        Snackbar.make(view, message, Snackbar.LENGTH_LONG).show();
     }
 
     @OnClick(R.id.btnConnect)
@@ -76,6 +91,7 @@ public class MainActivity extends AppCompatActivity implements MainContract.View
         mWifiManager.disconnect();
         mWifiManager.enableNetwork(config.networkId, true);
         mWifiManager.reconnect();
+        mPresenter.connect(this);
     }
 
     private WifiConfiguration createConfiguration(String ssid, String password) {
