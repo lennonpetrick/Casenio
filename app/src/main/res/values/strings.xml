@@ -1,6 +1,9 @@
 <resources>
     <string name="app_name">Casenio</string>
+
     <string name="hint_main_activity_ssid">SSID</string>
     <string name="hint_main_activity_password">Password</string>
+
     <string name="btn_main_activity_connect">Connect</string>
+    <string name="btn_main_activity_snack_bar_retry">Retry</string>
 </resources>

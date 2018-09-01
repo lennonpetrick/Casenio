@@ -1,17 +1,18 @@
 package com.test.casenio;
 
 import android.content.Context;
-import android.net.wifi.WifiConfiguration;
-import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.view.Window;
 import android.view.inputmethod.EditorInfo;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 
 import com.jakewharton.rxbinding2.widget.RxTextView;
+import com.test.casenio.wifi.ConnectivityListener;
+import com.test.casenio.wifi.WifiHelper;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -25,7 +26,7 @@ public class MainActivity extends AppCompatActivity implements MainContract.View
     @BindView(R.id.edPassword) EditText mEdPassword;
 
     private MainContract.Presenter mPresenter;
-    private WifiManager mWifiManager;
+    private WifiHelper mWifiHelper;
     private CompositeDisposable mListenersDisposable;
 
     @Override
@@ -34,9 +35,7 @@ public class MainActivity extends AppCompatActivity implements MainContract.View
         setContentView(R.layout.activity_main);
         ButterKnife.bind(this);
 
-        mWifiManager = (WifiManager) getApplicationContext()
-                .getSystemService(Context.WIFI_SERVICE);
-
+        mWifiHelper = WifiHelper.getInstance(this);
         mListenersDisposable = new CompositeDisposable();
         mPresenter = new MainPresenter(this);
 
@@ -45,6 +44,8 @@ public class MainActivity extends AppCompatActivity implements MainContract.View
 
     @Override
     protected void onDestroy() {
+        WifiHelper.destroy();
+        mWifiHelper = null;
         mListenersDisposable.clear();
         mListenersDisposable = null;
         mPresenter.disconnect();
@@ -54,12 +55,12 @@ public class MainActivity extends AppCompatActivity implements MainContract.View
 
     @Override
     public boolean isWifiEnable() {
-        return mWifiManager.isWifiEnabled();
+        return mWifiHelper.isWifiEnable();
     }
 
     @Override
     public void turnWifiOn() {
-        mWifiManager.setWifiEnabled(true);
+        mWifiHelper.setWifiEnable(true);
     }
 
     @Override
@@ -70,13 +71,38 @@ public class MainActivity extends AppCompatActivity implements MainContract.View
             view = window.getDecorView();
         }
 
-        Snackbar.make(view, message, Snackbar.LENGTH_LONG).show();
+        Snackbar.make(view, message, Snackbar.LENGTH_LONG)
+                .setAction(R.string.btn_main_activity_snack_bar_retry, v -> retry())
+                .show();
     }
 
     @OnClick(R.id.btnConnect)
     void connect() {
-        connect(mEdSSID.getText().toString(),
-                mEdPassword.getText().toString());
+        dismissKeyboard();
+
+        final String ssid = mEdSSID.getText().toString();
+        final String password = mEdPassword.getText().toString();
+        mWifiHelper.connectToWifi(ssid, password, 180000, // 3 Minutes
+                new ConnectivityListener() {
+                    @Override
+                    public void successfulConnected() {
+                        mPresenter.connect(MainActivity.this);
+                    }
+
+                    @Override
+                    public void connectionTimeout() {
+                        showMessage(getString(R.string.message_connection_timeout));
+                    }
+                });
+    }
+
+    private void retry() {
+        if (mWifiHelper.isConnected()
+                && mWifiHelper.isConnectedToWifi()) {
+            mPresenter.connect(this);
+        } else {
+            connect();
+        }
     }
 
     private void setListeners() {
@@ -85,19 +111,17 @@ public class MainActivity extends AppCompatActivity implements MainContract.View
                 .subscribe(integer -> connect()));
     }
 
-    private void connect(String ssid, String password) {
-        WifiConfiguration config = createConfiguration(ssid, password);
-        mWifiManager.addNetwork(config);
-        mWifiManager.disconnect();
-        mWifiManager.enableNetwork(config.networkId, true);
-        mWifiManager.reconnect();
-        mPresenter.connect(this);
+
+    private void dismissKeyboard() {
+        InputMethodManager inputManager = (InputMethodManager)
+                getSystemService(Context.INPUT_METHOD_SERVICE);
+
+        View view = getCurrentFocus();
+        if (inputManager != null && view != null) {
+            view.clearFocus();
+            inputManager.hideSoftInputFromWindow(view.getWindowToken(),
+                    InputMethodManager.RESULT_UNCHANGED_SHOWN);
+        }
     }
 
-    private WifiConfiguration createConfiguration(String ssid, String password) {
-        WifiConfiguration config = new WifiConfiguration();
-        config.SSID = String.format("\"%s\"", ssid);
-        config.preSharedKey = String.format("\"%s\"", password);
-        return config;
-    }
 }

@@ -44,5 +44,5 @@ dependencies {
     testImplementation "org.mockito:mockito-core:$mockito_version"
     testImplementation "org.hamcrest:hamcrest-all:$hamcrest_version"
     implementation "org.eclipse.paho:org.eclipse.paho.client.mqttv3:$paho_mqtt_version"
-    implementation "org.eclipse.paho:org.eclipse.paho.android.service:$paho_android_version"
+    implementation "org.eclipse.paho:org.eclipse.paho.android.service:$paho_mqtt_version"
 }
