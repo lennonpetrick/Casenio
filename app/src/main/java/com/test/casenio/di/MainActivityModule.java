@@ -2,8 +2,7 @@ package com.test.casenio.di;
 
 import android.content.Context;
 
-import com.test.casenio.MainContract;
-import com.test.casenio.MainPresenter;
+import com.test.casenio.MainViewModel;
 import com.test.casenio.messageclient.MessageClient;
 import com.test.casenio.messageclient.MqttClient;
 import com.test.casenio.wifi.WifiHelper;
@@ -43,15 +42,8 @@ public class MainActivityModule {
 
     @Provides
     @ApplicationScope
-    MainContract.View mainView() {
-        return (MainContract.View) mContext;
-    }
-
-    @Provides
-    @ApplicationScope
     @Inject
-    MainContract.Presenter mainPresenter(MainContract.View view, MessageClient client,
-                                    CompositeDisposable disposable) {
-        return new MainPresenter(view, client, disposable);
+    MainViewModel viewModel(MessageClient client) {
+        return new MainViewModel(client);
     }
 }

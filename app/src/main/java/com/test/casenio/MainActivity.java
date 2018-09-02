@@ -22,9 +22,11 @@ import javax.inject.Inject;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
+import io.reactivex.Observer;
 import io.reactivex.disposables.CompositeDisposable;
+import io.reactivex.disposables.Disposable;
 
-public class MainActivity extends AppCompatActivity implements MainContract.View {
+public class MainActivity extends AppCompatActivity {
 
     @BindView(R.id.container_fields) View mContainerFields;
     @BindView(R.id.container_result) View mContainerResult;
@@ -35,7 +37,7 @@ public class MainActivity extends AppCompatActivity implements MainContract.View
 
     @Inject WifiHelper mWifiHelper;
     @Inject CompositeDisposable mDisposable;
-    @Inject MainContract.Presenter mPresenter;
+    @Inject MainViewModel mViewModel;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -44,12 +46,18 @@ public class MainActivity extends AppCompatActivity implements MainContract.View
         ButterKnife.bind(this);
         injectDependencies();
         setListeners();
+        subscribeToMessagePublisher();
+        subscribeToStatusPublisher();
+
+        if (!isWifiEnable()) {
+            turnWifiOn();
+        }
     }
 
     @Override
     protected void onDestroy() {
-        mPresenter.disconnectFromClient();
-        mPresenter = null;
+        mViewModel.disconnectFromClient();
+        mViewModel = null;
 
         WifiHelper.destroy();
         mWifiHelper = null;
@@ -57,47 +65,6 @@ public class MainActivity extends AppCompatActivity implements MainContract.View
         mDisposable.clear();
         mDisposable = null;
         super.onDestroy();
-    }
-
-    @Override
-    public boolean isWifiEnable() {
-        return mWifiHelper.isWifiEnable();
-    }
-
-    @Override
-    public void turnWifiOn() {
-        mWifiHelper.setWifiEnable(true);
-    }
-
-    @Override
-    public void showMessage(String message) {
-        Window window = getWindow();
-        View view = window.getCurrentFocus();
-        if (view == null) {
-            view = window.getDecorView();
-        }
-
-        Snackbar.make(view, message, Snackbar.LENGTH_LONG)
-                .setAction(R.string.btn_main_activity_snack_bar_retry, v -> retry())
-                .show();
-    }
-
-    @Override
-    public void displayResult(String result) {
-        mContainerFields.setVisibility(View.GONE);
-        mTvResult.setText(result);
-        mContainerResult.setVisibility(View.VISIBLE);
-    }
-
-    @Override
-    public void setConnectionStatus(int resId) {
-        mTvConnectionStatus.setText(resId);
-        mTvConnectionStatus.setVisibility(View.VISIBLE);
-    }
-
-    @Override
-    public void hideConnectionStatus() {
-        mTvConnectionStatus.setVisibility(View.GONE);
     }
 
     @OnClick(R.id.btnConnect)
@@ -111,7 +78,7 @@ public class MainActivity extends AppCompatActivity implements MainContract.View
                 new ConnectivityListener() {
                     @Override
                     public void successfulConnected() {
-                        mPresenter.connectToClient();
+                        connectToClient();
                     }
 
                     @Override
@@ -133,7 +100,7 @@ public class MainActivity extends AppCompatActivity implements MainContract.View
     private void retry() {
         if (mWifiHelper.isConnected()
                 && mWifiHelper.isConnectedToWifi()) {
-            mPresenter.connectToClient();
+            connectToClient();
         } else {
             connect();
         }
@@ -143,6 +110,97 @@ public class MainActivity extends AppCompatActivity implements MainContract.View
         mDisposable.add(RxTextView.editorActions(mEdPassword)
                 .filter(actionId -> actionId == EditorInfo.IME_ACTION_DONE)
                 .subscribe(integer -> connect()));
+    }
+
+    private void connectToClient() {
+        setConnectionStatus(R.string.message_connecting_client);
+        mViewModel.connectToClient();
+    }
+
+    private void subscribeToMessagePublisher() {
+        mViewModel.getMessageObservable()
+                .subscribe(new Observer<String>() {
+                    @Override
+                    public void onSubscribe(Disposable d) {
+                        mDisposable.add(d);
+                    }
+
+                    @Override
+                    public void onNext(String message) {
+                        displayResult(message);
+                        hideConnectionStatus();
+                    }
+
+                    @Override
+                    public void onError(Throwable throwable) {
+                        hideConnectionStatus();
+                        showMessage(throwable.getMessage());
+                    }
+
+                    @Override
+                    public void onComplete() {
+                    }
+                });
+
+    }
+
+    private void subscribeToStatusPublisher() {
+        mViewModel.getStatusObservable()
+                .subscribe(new Observer<Integer>() {
+                    @Override
+                    public void onSubscribe(Disposable d) {
+                        mDisposable.add(d);
+                    }
+
+                    @Override
+                    public void onNext(Integer messageResId) {
+                        setConnectionStatus(messageResId);
+                    }
+
+                    @Override
+                    public void onError(Throwable throwable) {
+                        hideConnectionStatus();
+                        showMessage(throwable.getMessage());
+                    }
+
+                    @Override
+                    public void onComplete() {}
+                });
+    }
+
+    private boolean isWifiEnable() {
+        return mWifiHelper.isWifiEnable();
+    }
+
+    private void turnWifiOn() {
+        mWifiHelper.setWifiEnable(true);
+    }
+
+    private void showMessage(String message) {
+        Window window = getWindow();
+        View view = window.getCurrentFocus();
+        if (view == null) {
+            view = window.getDecorView();
+        }
+
+        Snackbar.make(view, message, Snackbar.LENGTH_LONG)
+                .setAction(R.string.btn_main_activity_snack_bar_retry, v -> retry())
+                .show();
+    }
+
+    private void displayResult(String result) {
+        mContainerFields.setVisibility(View.GONE);
+        mTvResult.setText(result);
+        mContainerResult.setVisibility(View.VISIBLE);
+    }
+
+    private void setConnectionStatus(int resId) {
+        mTvConnectionStatus.setText(resId);
+        mTvConnectionStatus.setVisibility(View.VISIBLE);
+    }
+
+    private void hideConnectionStatus() {
+        mTvConnectionStatus.setVisibility(View.GONE);
     }
 
     private void dismissKeyboard() {
