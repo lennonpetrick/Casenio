@@ -44,7 +44,7 @@ public class MainPresenter implements MainContract.Presenter {
                     mView.hideConnectionStatus();
                 },
                 throwable -> {
-                    throwable.printStackTrace();
+                    mView.hideConnectionStatus();
                     mView.showMessage(throwable.getMessage());
                 }));
     }
@@ -53,7 +53,7 @@ public class MainPresenter implements MainContract.Presenter {
     public void disconnectFromClient() {
         mDisposable.add(mMessageClient.unsubscribe(TOPIC)
                 .mergeWith(mMessageClient.disconnect())
-                .subscribe(() -> {}, Throwable::printStackTrace));
+                .subscribe(() -> {}, throwable -> {}));
     }
 
     private Observable<String> connectAndListen() {
@@ -61,8 +61,10 @@ public class MainPresenter implements MainContract.Presenter {
                 .observeOn(Schedulers.io())
                 .andThen(mMessageClient.publish(TOPIC, MESSAGE))
                 .observeOn(AndroidSchedulers.mainThread())
-                .andThen(Completable.create(e -> mView
-                        .setConnectionStatus(R.string.message_waiting_message)))
+                .andThen(Completable.create(e -> {
+                    mView.setConnectionStatus(R.string.message_waiting_message);
+                    e.onComplete();
+                }))
                 .observeOn(Schedulers.io())
                 .andThen(mMessageClient.subscribe(TOPIC));
     }
