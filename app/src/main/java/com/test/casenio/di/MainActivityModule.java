@@ -54,7 +54,4 @@ public class MainActivityModule {
                                     CompositeDisposable disposable) {
         return new MainPresenter(view, client, disposable);
     }
-
-
-
 }

@@ -34,7 +34,9 @@ public class WifiConnectivityReceiver extends BroadcastReceiver {
     public void onReceive(Context context, Intent intent) {
         if (mHelper.isConnected()) {
             if (mHelper.isConnectedToWifi()) {
-                mTimeoutHandler.removeCallbacks(mTimeoutRunnable);
+                if (mTimeoutHandler != null) {
+                    mTimeoutHandler.removeCallbacks(mTimeoutRunnable);
+                }
                 mConnectivityListener.successfulConnected();
             } else {
                 mHelper.disconnect();
