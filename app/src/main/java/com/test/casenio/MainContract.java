@@ -1,17 +1,16 @@
 package com.test.casenio;
 
-import android.content.Context;
-
 public interface MainContract {
 
     interface View {
         boolean isWifiEnable();
         void turnWifiOn();
         void showMessage(String message);
+        void displayResult(String result);
     }
 
     interface Presenter {
-        void connect(Context context);
-        void disconnect();
+        void connectToClient();
+        void disconnectFromClient();
     }
 }

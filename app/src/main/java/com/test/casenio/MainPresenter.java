@@ -1,26 +1,31 @@
 package com.test.casenio;
 
-import android.content.Context;
+import com.test.casenio.messageclient.MessageClient;
 
-import org.eclipse.paho.android.service.MqttAndroidClient;
-import org.eclipse.paho.client.mqttv3.IMqttActionListener;
-import org.eclipse.paho.client.mqttv3.IMqttToken;
-import org.eclipse.paho.client.mqttv3.MqttClient;
-import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
-import org.eclipse.paho.client.mqttv3.MqttException;
+import io.reactivex.Observable;
+import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.disposables.CompositeDisposable;
+import io.reactivex.schedulers.Schedulers;
 
 public class MainPresenter implements MainContract.Presenter {
 
     private static final String TOPIC = "casenio_topic";
-    private static final String SERVER_URI = "tcp://m20.cloudmqtt.com:15662";
-    private static final String USER = "rjnpkmdw";
-    private static final String PASSWORD = "WfqwIoROiN5S";
+    private static final String MESSAGE = "{\n" +
+                                            "  \"status\": \"OK\",\n" +
+                                            "  \"config\": {\n" +
+                                            "    \"OEM\": \"casenio\"\n" +
+                                            "  }\n" +
+                                            "}";
 
     private MainContract.View mView;
-    private MqttAndroidClient mClient;
+    private MessageClient mMessageClient;
+    private CompositeDisposable mDisposable;
 
-    public MainPresenter(MainContract.View view) {
+    public MainPresenter(MainContract.View view, MessageClient client,
+                         CompositeDisposable disposable) {
         this.mView = view;
+        this.mMessageClient = client;
+        this.mDisposable = disposable;
 
         if (!mView.isWifiEnable()) {
             mView.turnWifiOn();
@@ -28,67 +33,28 @@ public class MainPresenter implements MainContract.Presenter {
     }
 
     @Override
-    public void connect(Context context) {
-        final String clientId = MqttClient.generateClientId();
-        mClient = new MqttAndroidClient(context.getApplicationContext(), SERVER_URI, clientId);
-
-        try {
-            MqttConnectOptions options = new MqttConnectOptions();
-            options.setAutomaticReconnect(true);
-            options.setCleanSession(false);
-            options.setUserName(USER);
-            options.setPassword(PASSWORD.toCharArray());
-
-            mClient.connect(null, new IMqttActionListener() {
-                @Override
-                public void onSuccess(IMqttToken asyncActionToken) {
-                    subscribeToTopic(TOPIC);
-                }
-
-                @Override
-                public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
-                    exception.printStackTrace();
-                    mView.showMessage(exception.getMessage());
-                }
-            });
-        } catch (MqttException e) {
-            e.printStackTrace();
-            mView.showMessage(e.getMessage());
-        }
+    public void connectToClient() {
+        mDisposable.add(connectAndListen()
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(mView::displayResult,
+                        throwable -> {
+                            throwable.printStackTrace();
+                            mView.showMessage(throwable.getMessage());
+                        }));
     }
 
     @Override
-    public void disconnect() {
-        unsubscribeFromTopic(TOPIC);
-        disconnectFromClient();
+    public void disconnectFromClient() {
+        mDisposable.add(mMessageClient.unsubscribe(TOPIC)
+                .mergeWith(mMessageClient.disconnect())
+                .subscribe(() -> {}, Throwable::printStackTrace));
     }
 
-    private void subscribeToTopic(String topic) {
-        try {
-            mClient.subscribe(topic, 1, (comingTopic, message) -> {
-                mView.showMessage(message.toString());
-            });
-        } catch (MqttException e) {
-            e.printStackTrace();
-            mView.showMessage(e.getMessage());
-        }
-    }
-
-    private void unsubscribeFromTopic(String topic) {
-        try {
-            mClient.unsubscribe(topic);
-        } catch (MqttException e) {
-            e.printStackTrace();
-            mView.showMessage(e.getMessage());
-        }
-    }
-
-    private void disconnectFromClient() {
-        try {
-            mClient.disconnect();
-        } catch (MqttException e) {
-            e.printStackTrace();
-            mView.showMessage(e.getMessage());
-        }
+    private Observable<String> connectAndListen() {
+        return mMessageClient.connect()
+                .observeOn(Schedulers.io())
+                .andThen(mMessageClient.publish(TOPIC, MESSAGE))
+                .andThen(mMessageClient.subscribe(TOPIC));
     }
 }

@@ -9,8 +9,10 @@ import android.view.Window;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
+import android.widget.TextView;
 
 import com.jakewharton.rxbinding2.widget.RxTextView;
+import com.test.casenio.messageclient.MqttClient;
 import com.test.casenio.wifi.ConnectivityListener;
 import com.test.casenio.wifi.WifiHelper;
 
@@ -22,12 +24,14 @@ import io.reactivex.disposables.CompositeDisposable;
 public class MainActivity extends AppCompatActivity implements MainContract.View {
 
     @BindView(R.id.container_fields) View mContainerFields;
+    @BindView(R.id.container_result) View mContainerResult;
     @BindView(R.id.edSSID) EditText mEdSSID;
     @BindView(R.id.edPassword) EditText mEdPassword;
+    @BindView(R.id.tvResult) TextView mTvResult;
 
     private MainContract.Presenter mPresenter;
     private WifiHelper mWifiHelper;
-    private CompositeDisposable mListenersDisposable;
+    private CompositeDisposable mDisposable;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -36,20 +40,23 @@ public class MainActivity extends AppCompatActivity implements MainContract.View
         ButterKnife.bind(this);
 
         mWifiHelper = WifiHelper.getInstance(this);
-        mListenersDisposable = new CompositeDisposable();
-        mPresenter = new MainPresenter(this);
+        mDisposable = new CompositeDisposable();
+        mPresenter = new MainPresenter(this,
+                new MqttClient(this), mDisposable);
 
         setListeners();
     }
 
     @Override
     protected void onDestroy() {
+        mPresenter.disconnectFromClient();
+        mPresenter = null;
+
         WifiHelper.destroy();
         mWifiHelper = null;
-        mListenersDisposable.clear();
-        mListenersDisposable = null;
-        mPresenter.disconnect();
-        mPresenter = null;
+
+        mDisposable.clear();
+        mDisposable = null;
         super.onDestroy();
     }
 
@@ -76,6 +83,13 @@ public class MainActivity extends AppCompatActivity implements MainContract.View
                 .show();
     }
 
+    @Override
+    public void displayResult(String result) {
+        mContainerFields.setVisibility(View.GONE);
+        mTvResult.setText(result);
+        mContainerResult.setVisibility(View.VISIBLE);
+    }
+
     @OnClick(R.id.btnConnect)
     void connect() {
         dismissKeyboard();
@@ -86,7 +100,7 @@ public class MainActivity extends AppCompatActivity implements MainContract.View
                 new ConnectivityListener() {
                     @Override
                     public void successfulConnected() {
-                        mPresenter.connect(MainActivity.this);
+                        mPresenter.connectToClient();
                     }
 
                     @Override
@@ -99,14 +113,14 @@ public class MainActivity extends AppCompatActivity implements MainContract.View
     private void retry() {
         if (mWifiHelper.isConnected()
                 && mWifiHelper.isConnectedToWifi()) {
-            mPresenter.connect(this);
+            mPresenter.connectToClient();
         } else {
             connect();
         }
     }
 
     private void setListeners() {
-        mListenersDisposable.add(RxTextView.editorActions(mEdPassword)
+        mDisposable.add(RxTextView.editorActions(mEdPassword)
                 .filter(actionId -> actionId == EditorInfo.IME_ACTION_DONE)
                 .subscribe(integer -> connect()));
     }
