@@ -12,9 +12,12 @@ import android.widget.EditText;
 import android.widget.TextView;
 
 import com.jakewharton.rxbinding2.widget.RxTextView;
-import com.test.casenio.messageclient.MqttClient;
+import com.test.casenio.di.DaggerMainComponent;
+import com.test.casenio.di.MainActivityModule;
 import com.test.casenio.wifi.ConnectivityListener;
 import com.test.casenio.wifi.WifiHelper;
+
+import javax.inject.Inject;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -29,21 +32,16 @@ public class MainActivity extends AppCompatActivity implements MainContract.View
     @BindView(R.id.edPassword) EditText mEdPassword;
     @BindView(R.id.tvResult) TextView mTvResult;
 
-    private MainContract.Presenter mPresenter;
-    private WifiHelper mWifiHelper;
-    private CompositeDisposable mDisposable;
+    @Inject WifiHelper mWifiHelper;
+    @Inject CompositeDisposable mDisposable;
+    @Inject MainContract.Presenter mPresenter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         ButterKnife.bind(this);
-
-        mWifiHelper = WifiHelper.getInstance(this);
-        mDisposable = new CompositeDisposable();
-        mPresenter = new MainPresenter(this,
-                new MqttClient(this), mDisposable);
-
+        injectDependencies();
         setListeners();
     }
 
@@ -108,6 +106,14 @@ public class MainActivity extends AppCompatActivity implements MainContract.View
                         showMessage(getString(R.string.message_connection_timeout));
                     }
                 });
+    }
+
+    private void injectDependencies() {
+        DaggerMainComponent
+                .builder()
+                .mainActivityModule(new MainActivityModule(this))
+                .build()
+                .inject(this);
     }
 
     private void retry() {
