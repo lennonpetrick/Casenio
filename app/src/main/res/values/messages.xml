@@ -1,4 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="message_connection_timeout">Connection timeout</string>
+
+    <string name="message_connecting">Connecting to wifi…</string>
+    <string name="message_connecting_client">Connecting to client…</string>
+    <string name="message_waiting_message">Waiting for message…</string>
 </resources>

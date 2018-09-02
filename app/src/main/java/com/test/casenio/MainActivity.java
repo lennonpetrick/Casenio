@@ -31,6 +31,7 @@ public class MainActivity extends AppCompatActivity implements MainContract.View
     @BindView(R.id.edSSID) EditText mEdSSID;
     @BindView(R.id.edPassword) EditText mEdPassword;
     @BindView(R.id.tvResult) TextView mTvResult;
+    @BindView(R.id.tvConnectionStatus) TextView mTvConnectionStatus;
 
     @Inject WifiHelper mWifiHelper;
     @Inject CompositeDisposable mDisposable;
@@ -88,9 +89,21 @@ public class MainActivity extends AppCompatActivity implements MainContract.View
         mContainerResult.setVisibility(View.VISIBLE);
     }
 
+    @Override
+    public void setConnectionStatus(int resId) {
+        mTvConnectionStatus.setText(resId);
+        mTvConnectionStatus.setVisibility(View.VISIBLE);
+    }
+
+    @Override
+    public void hideConnectionStatus() {
+        mTvConnectionStatus.setVisibility(View.GONE);
+    }
+
     @OnClick(R.id.btnConnect)
     void connect() {
         dismissKeyboard();
+        setConnectionStatus(R.string.message_connecting);
 
         final String ssid = mEdSSID.getText().toString();
         final String password = mEdPassword.getText().toString();
@@ -103,6 +116,7 @@ public class MainActivity extends AppCompatActivity implements MainContract.View
 
                     @Override
                     public void connectionTimeout() {
+                        hideConnectionStatus();
                         showMessage(getString(R.string.message_connection_timeout));
                     }
                 });
@@ -130,7 +144,6 @@ public class MainActivity extends AppCompatActivity implements MainContract.View
                 .filter(actionId -> actionId == EditorInfo.IME_ACTION_DONE)
                 .subscribe(integer -> connect()));
     }
-
 
     private void dismissKeyboard() {
         InputMethodManager inputManager = (InputMethodManager)

@@ -2,6 +2,7 @@ package com.test.casenio;
 
 import com.test.casenio.messageclient.MessageClient;
 
+import io.reactivex.Completable;
 import io.reactivex.Observable;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.CompositeDisposable;
@@ -34,14 +35,18 @@ public class MainPresenter implements MainContract.Presenter {
 
     @Override
     public void connectToClient() {
+        mView.setConnectionStatus(R.string.message_connecting_client);
         mDisposable.add(connectAndListen()
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(mView::displayResult,
-                        throwable -> {
-                            throwable.printStackTrace();
-                            mView.showMessage(throwable.getMessage());
-                        }));
+                .subscribe(message -> {
+                    mView.displayResult(message);
+                    mView.hideConnectionStatus();
+                },
+                throwable -> {
+                    throwable.printStackTrace();
+                    mView.showMessage(throwable.getMessage());
+                }));
     }
 
     @Override
@@ -55,6 +60,10 @@ public class MainPresenter implements MainContract.Presenter {
         return mMessageClient.connect()
                 .observeOn(Schedulers.io())
                 .andThen(mMessageClient.publish(TOPIC, MESSAGE))
+                .observeOn(AndroidSchedulers.mainThread())
+                .andThen(Completable.create(e -> mView
+                        .setConnectionStatus(R.string.message_waiting_message)))
+                .observeOn(Schedulers.io())
                 .andThen(mMessageClient.subscribe(TOPIC));
     }
 }
