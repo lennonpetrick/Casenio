@@ -86,8 +86,10 @@ public class MainViewModel {
                 .observeOn(Schedulers.io())
                 .andThen(mMessageClient.publish(TOPIC, MESSAGE))
                 .observeOn(AndroidSchedulers.mainThread())
-                .andThen(Completable.create(e -> mStatusObservable
-                        .onNext(R.string.message_waiting_message)))
+                .andThen(Completable.create(e -> {
+                    mStatusObservable.onNext(R.string.message_waiting_message);
+                    e.onComplete();
+                }))
                 .observeOn(Schedulers.io())
                 .andThen(mMessageClient.subscribe(TOPIC));
     }
