@@ -1,6 +1,6 @@
 package com.test.casenio;
 
-import com.test.casenio.messageclient.MessageClient;
+import com.test.casenio.old.MainViewModel;
 
 import org.junit.After;
 import org.junit.Before;

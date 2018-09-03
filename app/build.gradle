@@ -1,4 +1,7 @@
 apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
+apply plugin: 'kotlin-android-extensions'
+apply plugin: 'kotlin-kapt'
 
 android {
     compileSdkVersion 27
@@ -34,7 +37,7 @@ dependencies {
     implementation "com.android.support.constraint:constraint-layout:$constraint_layout_version"
     implementation "com.jakewharton.rxbinding2:rxbinding:$rxbinding_version"
     implementation "com.jakewharton:butterknife:$jakewharton_butterknife_version"
-    annotationProcessor "com.jakewharton:butterknife-compiler:$jakewharton_butterknife_version"
+    kapt "com.jakewharton:butterknife-compiler:$jakewharton_butterknife_version"
     implementation "io.reactivex.rxjava2:rxjava:$rxjava_version"
     implementation "io.reactivex.rxjava2:rxandroid:$rxandroid_version"
     testImplementation "junit:junit:$junit_version"
@@ -43,5 +46,6 @@ dependencies {
     implementation "org.eclipse.paho:org.eclipse.paho.client.mqttv3:$paho_mqtt_version"
     implementation "org.eclipse.paho:org.eclipse.paho.android.service:$paho_mqtt_version"
     implementation "com.google.dagger:dagger:$dagger_version"
-    annotationProcessor "com.google.dagger:dagger-compiler:$dagger_version"
+    kapt "com.google.dagger:dagger-compiler:$dagger_version"
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jre7:$kotlin_version"
 }

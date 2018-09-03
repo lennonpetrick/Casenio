@@ -1,4 +1,4 @@
-package com.test.casenio.wifi;
+package com.test.casenio.old.wifi;
 
 import android.content.Context;
 import android.net.ConnectivityManager;

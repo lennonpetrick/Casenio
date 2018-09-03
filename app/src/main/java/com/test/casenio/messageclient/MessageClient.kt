@@ -1,19 +1,19 @@
-package com.test.casenio.messageclient;
+package com.test.casenio.messageclient
 
-import io.reactivex.Completable;
-import io.reactivex.Observable;
+import io.reactivex.Completable
+import io.reactivex.Observable
 
 /**
  * Interface to work with any client of message server
- * */
-public interface MessageClient {
+ */
+interface MessageClient {
 
     /**
      * Connect to a message server
      *
      * @return A completable
-     * */
-    Completable connect();
+     */
+    fun connect(): Completable
 
     /**
      * Publish to a topic in the connected server
@@ -22,17 +22,17 @@ public interface MessageClient {
      * @param message A message to be published
      *
      * @return A completable
-     * */
-    Completable publish(String topic, String message);
+     */
+    fun publish(topic: String, message: String): Completable
 
     /**
      * Subscribe to a topic in order to listen to messages
      *
      * @param topic A topic to be listening to messages
      *
-     * @return A Observable of {@link String} containing a message
-     * */
-    Observable<String> subscribe(String topic);
+     * @return A Observable of [String] containing a message
+     */
+    fun subscribe(topic: String): Observable<String>
 
     /**
      * Unsubscribe to a topic for stopping receiving messages
@@ -40,14 +40,14 @@ public interface MessageClient {
      * @param topic A topic to be unsubscribed
      *
      * @return A completable
-     * */
-    Completable unsubscribe(String topic);
+     */
+    fun unsubscribe(topic: String): Completable
 
     /**
      * Disconnect from the connected server
      *
      * @return A completable
-     * */
-    Completable disconnect();
+     */
+    fun disconnect(): Completable
 
 }
