@@ -4,21 +4,26 @@ import android.content.Context
 import io.reactivex.Completable
 import io.reactivex.Observable
 import org.eclipse.paho.android.service.MqttAndroidClient
-import org.eclipse.paho.client.mqttv3.IMqttActionListener
-import org.eclipse.paho.client.mqttv3.IMqttToken
-import org.eclipse.paho.client.mqttv3.MqttException
-import org.eclipse.paho.client.mqttv3.MqttMessage
+import org.eclipse.paho.client.mqttv3.*
+
+private const val SERVER_URI = "tcp://m20.cloudmqtt.com:15662"
+private const val USER = "kekiwtyo"
+private const val PASSWORD = "Az_Lk_XM_oBN"
 
 class MqttClient(context: Context) : MessageClient {
 
-    private val SERVER_URI = "tcp://m20.cloudmqtt.com:15662"
     private val mqttClient = MqttAndroidClient(context, SERVER_URI,
             org.eclipse.paho.client.mqttv3.MqttClient.generateClientId())
 
     override fun connect(): Completable {
         return Completable.create { emitter ->
             try {
-                mqttClient.connect(null, object : IMqttActionListener {
+                val options = MqttConnectOptions()
+                options.isCleanSession = true
+                options.userName = USER
+                options.password = PASSWORD.toCharArray()
+
+                mqttClient.connect(options, null, object : IMqttActionListener {
                     override fun onSuccess(asyncActionToken: IMqttToken) {
                         emitter.onComplete()
                     }
