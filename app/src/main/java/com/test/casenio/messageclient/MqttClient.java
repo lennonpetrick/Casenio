@@ -5,6 +5,7 @@ import android.content.Context;
 import org.eclipse.paho.android.service.MqttAndroidClient;
 import org.eclipse.paho.client.mqttv3.IMqttActionListener;
 import org.eclipse.paho.client.mqttv3.IMqttToken;
+import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 
@@ -14,6 +15,8 @@ import io.reactivex.Observable;
 public class MqttClient implements MessageClient {
 
     private static final String SERVER_URI = "tcp://m20.cloudmqtt.com:15662";
+    private static final String USER = "kekiwtyo";
+    private static final String PASSWORD = "Az_Lk_XM_oBN";
 
     private MqttAndroidClient mMqttClient;
 
@@ -26,7 +29,12 @@ public class MqttClient implements MessageClient {
     public Completable connect() {
         return Completable.create(emitter -> {
             try {
-                mMqttClient.connect(null, new IMqttActionListener() {
+                MqttConnectOptions options = new MqttConnectOptions();
+                options.setCleanSession(true);
+                options.setUserName(USER);
+                options.setPassword(PASSWORD.toCharArray());
+
+                mMqttClient.connect(options, null, new IMqttActionListener() {
                     @Override
                     public void onSuccess(IMqttToken asyncActionToken) {
                         emitter.onComplete();
